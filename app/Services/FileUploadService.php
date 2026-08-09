@@ -79,7 +79,24 @@ class FileUploadService
     }
 
     public function download(SharedFile $file): StreamedResponse
-    {
-        return Storage::disk($file->storage_disk)->download($file->storage_path, $file->original_name);
-    }
+{
+    $stream = Storage::disk($file->storage_disk)
+        ->readStream($file->storage_path);
+
+    abort_if($stream === false, 404, 'File not found.');
+
+    return response()->streamDownload(
+        function () use ($stream) {
+            fpassthru($stream);
+
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        },
+        $file->original_name,
+        [
+            'Content-Type' => $file->mime_type ?? 'application/octet-stream',
+        ]
+    );
+}
 }

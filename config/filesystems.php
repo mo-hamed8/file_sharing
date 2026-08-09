@@ -38,10 +38,23 @@ return [
             'report' => false,
         ],
 
+        'gcs' => [
+            'driver' => 'gcs',
+
+            'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
+
+            'bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+
+            'visibility_handler' =>
+            \League\Flysystem\GoogleCloudStorage\UniformBucketLevelAccessVisibility::class,
+
+            'throw' => true,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/') . '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
