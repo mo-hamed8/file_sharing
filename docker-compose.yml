@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: numas-share
+
+    ports:
+      - "8080:8080"
+
+    env_file:
+      - .env
+
+    volumes:
+      - ${APPDATA}/gcloud/application_default_credentials.json:/gcp/adc.json:ro
+
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /gcp/adc.json
