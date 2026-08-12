@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\RoomStatus;
 use App\Models\Room;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class RoomCleanupService
@@ -19,6 +20,11 @@ class RoomCleanupService
             $this->purgeRoom($room, RoomStatus::Expired);
         }
 
+        Log::info('Expired room sweep completed', [
+            'event' => 'room_expiry_sweep_completed',
+            'rooms_purged' => $rooms->count(),
+        ]);
+
         return $rooms->count();
     }
 
@@ -29,12 +35,32 @@ class RoomCleanupService
      */
     public function purgeRoom(Room $room, RoomStatus $finalStatus = RoomStatus::Ended): void
     {
-        Storage::disk(config('rooms.disk'))->deleteDirectory($room->public_id);
+        try {
+            Storage::disk(config('rooms.disk'))->deleteDirectory($room->public_id);
+        } catch (\Throwable $e) {
+            Log::error('Room storage cleanup failed', [
+                'event' => 'room_cleanup_failed',
+                'room_id' => $room->public_id,
+                'disk' => config('rooms.disk'),
+                'exception' => get_class($e),
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
 
         $room->files()->delete();
         $room->participants()->delete();
 
         $room->status = $finalStatus;
         $room->save();
+
+        Log::info(match ($finalStatus) {
+            RoomStatus::Expired => 'Room expired',
+            default => 'Room closed',
+        }, [
+            'event' => $finalStatus === RoomStatus::Expired ? 'room_expired' : 'room_closed',
+            'room_id' => $room->public_id,
+        ]);
     }
 }

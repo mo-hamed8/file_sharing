@@ -10,6 +10,7 @@ use App\Services\FileUploadService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FileController extends Controller
@@ -23,8 +24,17 @@ class FileController extends Controller
     public function store(Room $room, StoreFileRequest $request): JsonResponse
     {
         $actor = $request->roomActor();
+        $canUpload = $room->allow_participant_uploads || $actor->isHost();
 
-        abort_unless($room->allow_participant_uploads || $actor->isHost(), 403, 'Uploads are disabled in this room.');
+        if (! $canUpload) {
+            Log::warning('Upload rejected: participant uploads disabled for this room', [
+                'event' => 'upload_rejected',
+                'room_id' => $room->public_id,
+                'participant_id' => $actor->participant?->public_id,
+            ]);
+        }
+
+        abort_unless($canUpload, 403, 'Uploads are disabled in this room.');
 
         $file = $this->uploads->store($room, $actor->participant, $request->file('file'));
 
@@ -47,7 +57,18 @@ class FileController extends Controller
         $this->assertBelongsToRoom($room, $file);
 
         $actor = $request->roomActor();
-        abort_unless($actor->isHost() || $actor->participant?->id === $file->participant_id, 403, 'You cannot delete this file.');
+        $canDelete = $actor->isHost() || $actor->participant?->id === $file->participant_id;
+
+        if (! $canDelete) {
+            Log::warning('File delete rejected: insufficient permissions', [
+                'event' => 'file_delete_rejected',
+                'room_id' => $room->public_id,
+                'file_id' => $file->public_id,
+                'participant_id' => $actor->participant?->public_id,
+            ]);
+        }
+
+        abort_unless($canDelete, 403, 'You cannot delete this file.');
 
         $this->uploads->delete($file);
 

@@ -8,6 +8,7 @@ use App\Exceptions\RoomNotJoinableException;
 use App\Models\Room;
 use App\Support\RoomCreationResult;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class RoomService
@@ -28,6 +29,13 @@ class RoomService
             'maximum_file_size' => $data['maximum_file_size'] ?? null,
             'maximum_files' => $data['maximum_files'] ?? null,
             'total_storage_limit' => $data['total_storage_limit'] ?? null,
+        ]);
+
+        Log::info('Room created', [
+            'event' => 'room_created',
+            'room_id' => $room->public_id,
+            'expires_at' => $room->expires_at?->toIso8601String(),
+            'allow_participant_uploads' => $room->allow_participant_uploads,
         ]);
 
         return new RoomCreationResult($room, $hostToken);
@@ -64,6 +72,12 @@ class RoomService
     public function assertJoinable(Room $room): void
     {
         if ($room->status !== RoomStatus::Active || $room->expires_at->isPast()) {
+            Log::warning('Room join rejected: room is closed or expired', [
+                'event' => 'room_join_rejected',
+                'room_id' => $room->public_id,
+                'status' => $room->status->value,
+            ]);
+
             throw new RoomNotJoinableException;
         }
     }

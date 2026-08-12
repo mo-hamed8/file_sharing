@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class RoomController extends Controller
@@ -38,6 +39,12 @@ class RoomController extends Controller
     public function show(Request $request, Room $room): View
     {
         if ($room->status !== RoomStatus::Active || $room->expires_at->isPast()) {
+            Log::warning('Room join rejected: room is closed or expired', [
+                'event' => 'room_join_rejected',
+                'room_id' => $room->public_id,
+                'status' => $room->status->value,
+            ]);
+
             return view('rooms.closed', [
                 'room' => $room,
                 'isExpired' => $room->status === RoomStatus::Expired || $room->expires_at->isPast(),

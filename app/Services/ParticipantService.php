@@ -9,6 +9,7 @@ use App\Exceptions\CannotRemoveHostException;
 use App\Models\Participant;
 use App\Models\Room;
 use App\Support\ParticipantJoinResult;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ParticipantService
@@ -25,6 +26,12 @@ class ParticipantService
         $this->rooms->assertJoinable($room);
 
         $result = $this->createParticipant($room, $displayName, ParticipantRole::Participant);
+
+        Log::info('Participant joined room', [
+            'event' => 'participant_joined',
+            'room_id' => $room->public_id,
+            'participant_id' => $result->participant->public_id,
+        ]);
 
         ParticipantJoined::dispatch($result->participant);
 

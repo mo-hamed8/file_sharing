@@ -6,7 +6,9 @@ use App\Support\ApiResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -26,6 +28,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $wantsJson = fn (Request $request) => $request->is('api/*') || $request->expectsJson();
 
         $exceptions->shouldRenderJsonWhen($wantsJson);
+
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            Log::warning('Rate limit exceeded', [
+                'event' => 'rate_limit_exceeded',
+                'path' => $request->path(),
+            ]);
+
+            return null;
+        });
 
         $exceptions->render(function (RoomException $e, Request $request) use ($wantsJson) {
             if ($wantsJson($request)) {
