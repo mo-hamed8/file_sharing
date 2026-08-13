@@ -9,7 +9,9 @@ RUN apt-get update && apt-get install -y \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd zip \
+    && docker-php-ext-install gd zip pdo_mysql \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -29,4 +31,4 @@ RUN rm -f bootstrap/cache/*.php \
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "php artisan package:discover --ansi && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
+CMD ["sh", "-c", "php artisan package:discover --ansi && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
