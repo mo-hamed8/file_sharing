@@ -1,0 +1,34 @@
+steps:
+  # 1. Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'me-central1-docker.pkg.dev/$PROJECT_ID/file-sharing-repo/file-sharing:$COMMIT_SHA'
+      - '.'
+
+  # 2. Push Docker image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'me-central1-docker.pkg.dev/$PROJECT_ID/file-sharing-repo/file-sharing:$COMMIT_SHA'
+
+  # 3. Deploy new image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'file-sharing'
+      - '--image'
+      - 'me-central1-docker.pkg.dev/$PROJECT_ID/file-sharing-repo/file-sharing:$COMMIT_SHA'
+      - '--region'
+      - 'me-central1'
+      - '--platform'
+      - 'managed'
+
+images:
+  - 'me-central1-docker.pkg.dev/$PROJECT_ID/file-sharing-repo/file-sharing:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
