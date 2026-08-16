@@ -1,3 +1,22 @@
+# -----------------------------
+# 1. Build frontend assets
+# -----------------------------
+FROM node:22 AS frontend
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+
+RUN npm ci
+
+COPY . .
+
+RUN npm run build
+
+
+# -----------------------------
+# 2. Laravel application
+# -----------------------------
 FROM php:8.4-cli
 
 WORKDIR /app
@@ -25,6 +44,9 @@ RUN composer install \
     --no-scripts
 
 COPY . .
+
+# Copy compiled Vite files from Node stage
+COPY --from=frontend /app/public/build ./public/build
 
 RUN rm -f bootstrap/cache/*.php \
     && chmod -R 775 storage bootstrap/cache
