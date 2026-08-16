@@ -1,6 +1,6 @@
 <x-layouts.app>
     <div class="mx-auto flex max-w-5xl flex-col items-center px-4 py-16 text-center sm:py-24">
-
+        <h1>TEST for CI/CD</h1>
 
         <h1 class="max-w-2xl text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
             Share files instantly with everyone in the room
