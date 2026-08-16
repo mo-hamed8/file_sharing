@@ -19,7 +19,7 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'file-sharing'
+      - 'file-sharing-app'
       - '--image'
       - 'me-central1-docker.pkg.dev/$PROJECT_ID/file-sharing-repo/file-sharing:$COMMIT_SHA'
       - '--region'
